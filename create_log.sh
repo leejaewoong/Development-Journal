@@ -8,24 +8,30 @@ FILE_PATH="logs/$TODAY.md"
 
 if [[ ! -f "$FILE_PATH" ]]; then
     cat <<EOL > "$FILE_PATH"
-❓ ✔️ ⏲️ 🗓️ 🆚
+❓ ✔️ ⏲️ 🗓️ ⚔️
 
-#🧠**공부 흐름**
-
-
-#💻️**백준 문제풀이**
+## 🧠공부 흐름
 
 
-#🐍**파이썬 학습**
+## 🔢백준 문제풀이
 
 
-#📓**컴퓨터 시스템(CSAPP)**
+## 🐍파이썬 학습
 
 
-#💬**챗GPT 활용법 연구**
+## 📓컴퓨터 시스템(CSAPP)
 
 
-#**VS Code 활용법 연구**
+## 💬챗GPT 활용법 연구
+
+
+## 🖥️VS Code 활용법 연구
+
+
+## 💾Git/GitHub 학습
+
+
+## 📌기타
 
 EOL
     echo "Created new log file: $FILE_PATH"
