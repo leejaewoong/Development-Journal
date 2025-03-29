@@ -8,7 +8,7 @@ FILE_PATH="logs/$TODAY.md"
 
 if [[ ! -f "$FILE_PATH" ]]; then
     cat <<EOL > "$FILE_PATH"
-❓ ✔️ ⏲️ 🗓️ ⚔️
+❓ ✔️ ⏲️ 🗓️ ⚔️ 💡
 
 ## 🧠공부 흐름
 
@@ -17,6 +17,9 @@ if [[ ! -f "$FILE_PATH" ]]; then
 
 
 ## 🐍파이썬 학습
+
+
+## 🗃️자료구조/알고리즘
 
 
 ## 📓컴퓨터 시스템(CSAPP)
