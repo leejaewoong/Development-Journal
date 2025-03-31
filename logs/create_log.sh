@@ -3,12 +3,13 @@
 # 현재 날짜를 yy-mm-dd 형식으로 가져오기
 TODAY=$(date +"%y-%m-%d")
 
-# 새로운 마크다운 파일 생성 (기존 파일이 있으면 유지)
-FILE_PATH="logs/$TODAY.md"
+# 절대 경로 기준으로 로그 파일 경로 설정
+BASE_DIR="/c/Users/jaewoong/desktop/Development-Journal/logs"
+FILE_PATH="$BASE_DIR/$TODAY.md"
 
 if [[ ! -f "$FILE_PATH" ]]; then
     cat <<EOL > "$FILE_PATH"
-❓ ✔️ ⏲️ 🗓️ ⚔️ 💡
+❓ ✔️ ⏲️ 🗓️ ⚔️ 💡 🔥 🎵 😭
 
 ## 🧠공부 흐름
 
