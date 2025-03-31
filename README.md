@@ -1,6 +1,6 @@
-#GitHub CLI로 이슈 등록하기
+# GitHub CLI로 이슈 등록하기
 
-##주요 명령어
+## 주요 명령어
 - Full 명령어 ```gh issue create --repo 사용자명/레포지토리명 --title "이슈 제목" --body "이슈 내용"```
 - 이슈 목록 조회 ```gh issue list --repo 사용자명/레포지토리명```
 - 특정 이슈 상세 조회 ```gh issue view 이슈번호 --repo 사용자명/레포지토리명```
@@ -11,7 +11,7 @@
 - **단축 명령어 지우기** ```gh alias delete <단축 명령어>```
 
 
-##등록된 단축 명령어
+## 등록된 단축 명령어
 - Development-Journal에 타이틀만 지정해서 이슈 등록하기 ```gh quick-issue "<제목>"```
 - Development-Journal에 특정 이슈 닫기 **TBU**
 - Development-Journal에 열린 모든 이슈 닫기 ```gh close-all-issues```
