@@ -1,7 +1,7 @@
 
 # %%
 # try / except / else
-text = 7
+num = 7
 
 def test(text:str):     
     try:
@@ -13,25 +13,28 @@ def test(text:str):
 
     else:
         print('완료')
+    
     print('함수를 마칩니다.')
 
-test(text)   
+test(num)   
 
 # %%
 # raise
 num = 7
 
-def num(num:int):         
-    if text < 10:
+def test(num:int):         
+    if num < 10:
         raise IndexError("두자리 이상 수만 지원합니다.")
-    for letter in range(len(text)):    
-        print('letter')    
+    
+    for letter in range(num):    
+        print(letter)    
+
     else:
         print('완료')
     
     print('함수를 마칩니다.')
 
-test(text)   
+test(num)   
 
 # %%
 # try / raise / except / else
@@ -44,7 +47,7 @@ def test(text:str):
     
         else:
             for letter in range(len(text)):
-                print('letter')
+                print(letter)
 
     except TypeError: 
         print(f"str만 지원합니다.")
@@ -58,7 +61,7 @@ test(text)
 
 # %%
 # try / else / finally
-text = 7
+num = 7
 
 def test(text:str):         
     try:
@@ -72,10 +75,10 @@ def test(text:str):
     finally:
         print('함수를 마칩니다.')
 
-test(text)   
+test(num)   
 # %%
 # try / except / else
-text = 7
+num = 7
 
 def test(text:str):         
     try:
@@ -90,5 +93,7 @@ def test(text:str):
             
     print('함수를 마칩니다.')
 
-test(text)   
+test(num)   
+
+
 # %%
