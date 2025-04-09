@@ -9,7 +9,7 @@ FILE_PATH="$BASE_DIR/$TODAY.md"
 
 if [[ ! -f "$FILE_PATH" ]]; then
     cat <<EOL > "$FILE_PATH"
-→ ↓ ↔ ❓ ✔️ ⏲️ 🗓️ ⚔️ 💡 🔥 🎵 😭
+→ ↓ ↔ ❓ ✔️ ⏲️ 🗓️ ⚔️ 💡 🔥 😭 👏 🎵 
 
 ## 🧠공부 흐름
 
