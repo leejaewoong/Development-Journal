@@ -97,7 +97,8 @@ struct thread {
 	int base_priority;                  /* 기부 이전 우선순위 */
 
 	/* Shared between thread.c and synch.c. */
-	struct list_elem elem;              /* List element. */
+	struct list_elem elem;              /* sleep, ready List element. */
+	struct list_elem d_elem;            /* donation List element. */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -117,6 +118,9 @@ struct thread {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+extern void donate_priority(struct thread *donur, struct thread *holder);
+extern bool is_in_donations(struct thread *donur, struct thread *holder);
+
 
 /* THREADS #1. Alarm Clock */
 void thread_sleep (int64_t ticks);

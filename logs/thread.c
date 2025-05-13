@@ -78,6 +78,12 @@ bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *a
 static bool cmp_wakeup_tick (const struct list_elem *a, const struct list_elem *b, void *aux);
 static void preempt_priority(void);
 
+
+//=== [6] Global Function Declarations ===//
+void recal_priority(struct thread *t);
+void donate_priority(struct thread *donur, struct thread *holder);
+bool is_in_donations(struct thread *donur, struct thread *holder);
+
 /* ------------------ Debug Utilities ------------------ */
 // static void debug_print_thread_lists (void);    // 디버깅용 리스트 출력 함수
 
@@ -191,16 +197,16 @@ thread_create (const char *name, int priority,
 
 	ASSERT (function != NULL);			// 실행할 함수는 NULL일 수 없음
 
-	/* 1. 스레드 구조체 메모리 할당 및 0으로 초기화 */
+	/* 스레드 구조체 메모리 할당 및 0으로 초기화 */
 	t = palloc_get_page (PAL_ZERO);   	// PAL_ZERO: 할당 후 0으로 초기화
 	if (t == NULL)
 		return TID_ERROR;				// 메모리 할당 실패 시 오류 반환
 
-	/* 2. 스레드 초기화 및 TID 설정 */
+	/* 스레드 초기화 및 TID 설정 */
 	init_thread (t, name, priority);     // 이름과 우선순위 설정
 	tid = t->tid = allocate_tid ();      // 고유한 TID 할당
 
-	/* 3. 새 스레드가 실행할 함수와 컨텍스트 설정 */
+	/* 새 스레드가 실행할 함수와 컨텍스트 설정 */
 	t->tf.rip = (uintptr_t) kernel_thread;	// 실행 시작 지점을 kernel_thread로 설정
 	t->tf.R.rdi = (uint64_t) function;      // 첫 번째 인자로 실행할 함수 전달
 	t->tf.R.rsi = (uint64_t) aux;           // 두 번째 인자로 함수 인자 전달
@@ -210,14 +216,15 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;                   // 코드 세그먼트
 	t->tf.eflags = FLAG_IF;                 // 인터럽트 플래그 설정
 
-	/* 4. 스레드를 READY 상태로 전환하고 ready_list에 삽입 */
+	/* 스레드를 READY 상태로 전환하고 ready_list에 삽입 */
 	thread_unblock (t);
+
+	/* 우선순위 업데이트 */
+	recal_priority(thread_current());	
 	
 	/** project1-Priority Scheduling */
 	if(t->priority > thread_current()->priority)
-		thread_yield();
-
-	// preempt_priority();	// 🔥 removed: thread_unblock already handles preemption logic
+		thread_yield();	
 
 	return tid;								// 생성된 스레드의 ID 반환
 }
@@ -649,14 +656,7 @@ kernel_thread (thread_func *function, void *aux) {
 }
 
 
-/* Does basic initialization of T as a blocked thread named
-   NAME. 
-   
-   ✅ TODO: priority donation을 위해 필요한 필드 초기화
-     1. donations 리스트 초기화 - 우선순위 기부 내역을 관리하기 위한 리스트
-     2. wait_on_lock 초기화 - 대기 중인 락의 주소를 추적하기 위한 포인터
-     3. base_priority 초기화 - 원래 우선순위를 저장하는 멤버 변수
-   */
+/* Does basic initialization of T as a blocked thread named */   
 static void
 init_thread (struct thread *t, const char *name, int priority) {
 	ASSERT (t != NULL);
@@ -665,12 +665,14 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	memset (t, 0, sizeof *t);
 	t->status = THREAD_BLOCKED;
+	t->wakeup_ticks = 0;
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
-	t->wait_on_lock = NULL;
-	t->base_priority = priority;
+	t->wait_on_lock = NULL; 
+	t->base_priority = priority; 
+	list_init(&t->donations); /* 리스트 초기화 필요 */
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -856,22 +858,53 @@ allocate_tid (void)
 	return tid;
 }
 
-// /* ------------------ 디버깅용 리스트 출력 함수 ------------------ */
-// static void
-// debug_print_thread_lists(void) {
-//   struct list_elem *e;
+void recal_priority(struct thread *t)
+{
+	int max_p = t->base_priority; /* base_priority로 초기화 */
 
-//   // printf("[LIST] ready_list: ");
-//   for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e)) {
-//     struct thread *t = list_entry(e, struct thread, elem);
-//     printf("(%s, pri=%d) ", t->name, t->priority);
-//   }
-//   printf("\n");
+	/* 해상 thread의 donations list에 있는 thread들을 순회하며 가장 큰 priority를 탐색 */
+	for(struct list_elem *e = list_begin(&t->donations); e != list_end(&t->donations); e = list_next(e))
+	{
+		struct thread *cmp_t = list_entry(e, struct thread, d_elem);
+		max_p = max_p > cmp_t->priority ? max_p : cmp_t->priority;
+	}
 
-//   // printf("[LIST] sleep_list: ");
-//   for (e = list_begin(&sleep_list); e != list_end(&sleep_list); e = list_next(e)) {
-//     struct thread *t = list_entry(e, struct thread, elem);
-//     printf("(%s, wakeup=%lld) ", t->name, t->wakeup_ticks);
-//   }
-//   printf("\n");
-// }
+	// max_p = max_p > t->priority ? max_p : t->priority; /* 현재 thread의 우선 순위와 donations list 중에 큰 priority로 갱신 */
+	t->priority = max_p; /* t의 priority 값 갱신 */
+
+	return;
+}
+
+void donate_priority(struct thread *donur, struct thread *holder)
+{
+	/* holder가 없거나 donur이면 함수 종료 */
+	if(holder == NULL || holder == donur)
+		return;		
+	
+	/* donur의 우선순위가 더 높을 때만 donation 수행 */
+	if(donur->priority > holder->priority)		
+	{
+		enum intr_level old_level = intr_disable (); /* 인터럽트 비활성화 */
+	
+		list_push_back(&holder->donations, &donur->d_elem);
+		
+		intr_set_level (old_level); /* 인터럽트 복구 */
+		
+		recal_priority(holder);			
+	}	
+
+	return;
+}
+
+bool is_in_donations(struct thread *donur, struct thread *holder)
+{
+	struct list_elem *donur_d_elem = &donur->d_elem;
+	
+	for(struct list_elem *e = list_begin(&holder->donations); e != list_end(&holder->donations); e = list_next(e))
+	{
+		if(e == donur_d_elem)
+			return true;
+	}
+
+	return false;
+}
