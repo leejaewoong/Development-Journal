@@ -68,10 +68,11 @@ sema_down (struct semaphore *sema) {
 	
 	/* sema의 값이 0일 때는 실행 중인 스레드를 우선순위대로 sema의 waiters 리스트에 삽입 */
 	while (sema->value == 0) {
-		list_insert_ordered(&sema->waiters, &thread_current ()->elem, cmp_priority, NULL);		
+		list_insert_ordered(&sema->waiters, &thread_current ()->elem, cmp_priority, NULL);						
 		thread_block ();
 	}
 	sema->value--;
+	preempt_priority();
 	intr_set_level (old_level);
 }
 
@@ -112,14 +113,11 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	if (!list_empty (&sema->waiters))
-	{
-		struct thread *cmp_t = list_entry(list_begin(&sema->waiters), struct thread, elem);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters), struct thread, elem));
-	}
+	
 	sema->value++;
 	intr_set_level (old_level);
-
-	thread_yield();
+	preempt_priority();
 }
 
 static void sema_test_helper (void *sema_);
@@ -192,17 +190,18 @@ void
 lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
-	thread_current()->wait_on_lock = lock;
+	thread_current()->wait_on_lock = lock;	
 	
 	/* holder가 없거나, donur 자신인 경우, holder의 우선순위가 더 높은 경우를 제외하고, donur의 우선순위 donation */
-	donate_priority(thread_current(), &lock->holder); 
-
+	donate_priority(thread_current(), lock->holder); 
+	
 	/* sema의 value가 0이면 실행중인 thread를 block, 그렇지 않으면 value를 0으로 만들고 종료 */
 	sema_down (&lock->semaphore);
 
 	/* lock 획득에 따른 holder, wait_on_lock 갱신 */	
 	lock->holder = thread_current ();
 	thread_current()->wait_on_lock = NULL;
+	preempt_priority();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -232,11 +231,27 @@ lock_try_acquire (struct lock *lock) {
    handler. */
 void
 lock_release (struct lock *lock) {
+	struct thread *curr = thread_current ();
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
+	/* donations 리스트를 순회하며 작업이 끝난 lock의 대기 thread를 리스트에서 제거 */
+	for (struct list_elem *e = list_begin (&curr->donations); e != list_end (&curr->donations); e = list_next(e)) 
+    {
+        struct thread *donor = list_entry (e, struct thread, d_elem);        
+
+        if (donor->wait_on_lock == lock) 
+            list_remove (e);             
+    }
+
+    /* 우선순위 복원 */
+    recal_priority (curr);
+
+	/* 해당 lock 업데이트 */
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
+
+	preempt_priority();
 }
 
 /* Returns true if the current thread holds LOCK, false
@@ -248,7 +263,7 @@ lock_held_by_current_thread (const struct lock *lock) {
 
 	return lock->holder == thread_current ();
 }
-
+
 /* One semaphore in a list. */
 struct semaphore_elem {
 	struct list_elem elem;              /* List element. */

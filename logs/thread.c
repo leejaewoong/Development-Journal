@@ -76,10 +76,11 @@ static tid_t allocate_tid (void);
 /* ------------------ Ready/Sleep Queue Compare Functions ------------------ */
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux);
 static bool cmp_wakeup_tick (const struct list_elem *a, const struct list_elem *b, void *aux);
-static void preempt_priority(void);
+void preempt_priority(void);
 
 
 //=== [6] Global Function Declarations ===//
+void preempt_priority(void);
 void recal_priority(struct thread *t);
 void donate_priority(struct thread *donur, struct thread *holder);
 bool is_in_donations(struct thread *donur, struct thread *holder);
@@ -516,14 +517,14 @@ thread_exit (void) {
  *************************************************************/
 void
 thread_yield (void) {
-	struct thread *cur = thread_current ();		// 현재 실행중인 스레드 구조체 반환
+	struct thread *curr = thread_current ();		// 현재 실행중인 스레드 구조체 반환
 	enum intr_level old_level;					// 인터럽트 상태 저장용 변수
 
 	ASSERT (!intr_context ());		// 인터럽트 핸들러 내에서는 호출 불가 (중첩 스케쥴링 방지)
 	old_level = intr_disable ();	// 인터럽트를 비활성화(ready_list 수정 중 동기화 필요)하고 이전 상태를 리턴
 	
-	if (cur != idle_thread)			// 현재 스레드가 idle이 아니라면 ready_list에 우선순위 기준으로 삽입
-		list_insert_ordered (&ready_list, &cur->elem, cmp_priority, NULL);
+	if (curr != idle_thread)			// 현재 스레드가 idle이 아니라면 ready_list에 우선순위 기준으로 삽입
+		list_insert_ordered (&ready_list, &curr->elem, cmp_priority, NULL);
 	
 	do_schedule (THREAD_READY);		// 현재 스레드 상태를 THREAD_READY로 바꾸고 스케줄링 수행
 	intr_set_level (old_level);		// 인터럽트 상태 복원
@@ -571,8 +572,12 @@ cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNU
 void
 thread_set_priority (int new_priority) 
 {
-	thread_current ()->priority = new_priority;
-	preempt_priority();		// 🔥 우선순위 하락 시 즉시 스케줄링 변경 여부 확인
+	/* base_priority를 갱신한다음 우선순위를 재계산하여 동기화 */ 
+	thread_current ()->base_priority = new_priority; 
+	recal_priority(thread_current());
+
+	/* 우선순위 변경에 따른 선점 필요 확인 */
+	preempt_priority(); 
 }
 
 /* Returns the current thread's priority. */
@@ -877,16 +882,18 @@ void recal_priority(struct thread *t)
 
 void donate_priority(struct thread *donur, struct thread *holder)
 {
+	struct thread *curr = thread_current();
 	/* holder가 없거나 donur이면 함수 종료 */
-	if(holder == NULL || holder == donur)
-		return;		
+	if(holder == NULL || holder == donur)		
+		return;			
 	
 	/* donur의 우선순위가 더 높을 때만 donation 수행 */
 	if(donur->priority > holder->priority)		
 	{
 		enum intr_level old_level = intr_disable (); /* 인터럽트 비활성화 */
 	
-		list_push_back(&holder->donations, &donur->d_elem);
+		list_insert_ordered(&holder->donations, &donur->d_elem, cmp_priority, NULL);
+		// list_push_back(&holder->donations, &donur->d_elem);
 		
 		intr_set_level (old_level); /* 인터럽트 복구 */
 		
