@@ -227,9 +227,10 @@ int main(int argc, char *argv[])
   - Ctrl + B: 좌측 패널 열기/닫기
   - Ctrl + J: 하단 패널 열기/닫기
   - Ctrl + Shift + `: 현재 작업 폴더에서 터미널 열기
-  - Ctrl + Shift + P : 현재 워크 스페이스에서 문자열 검색 (파일 검색 X)
-  - Ctrl + P : 현재 파일에서 문자열 검색
-  - : 파일 검색
+  - Ctrl + P : 현재 워크 스페이스에서 파일 검색
+  - Ctrl + Shift + F : 현재 워크 스페이스에서 문자열 검색 (파일 검색 X)
+  - Ctrl + F : 현재 파일에서 문자열 검색
+  
 
 #### Git/GitHub 학습
 - 노션에 모두 정리
