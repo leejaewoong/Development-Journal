@@ -11,34 +11,31 @@ if [[ ! -f "$FILE_PATH" ]]; then
     cat <<EOL > "$FILE_PATH"
 → ↓ ↔ ❓ ✔️ ⏲️ 🗓️ ⚔️ 💡 🔥 😭 👏 🎵 🚨 💥
 
-## 🧠공부 흐름
-⏲️
-
-## 😈PintOS
+## 📚프로젝트
 
 
-## 🔢백준 문제풀이
+## ⏲️일정관리
 
 
-## ⚙️C 학습
+## 🤝팀워크
 
 
-## 🗃️자료구조/알고리즘
+## 📝프로그래밍
 
 
-## 📓컴퓨터 시스템(CSAPP)
+## 🚀개발도구
 
 
-## 💬챗GPT 활용법 연구
+## 🗄️데이터베이스
 
 
-## 🖥️VS Code 활용법 연구
+## 🧠AI 활용
 
 
-## 💾Git/GitHub 학습
+## 💾Git/GitHub
 
 
-## 📌기타
+## ⚠️이슈
 
 EOL
     echo "Created new log file: $FILE_PATH"
