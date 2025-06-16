@@ -32,6 +32,9 @@ if [[ ! -f "$FILE_PATH" ]]; then
 ## 🧠AI 활용
 
 
+## 🖥️VS Code 활용법 연구
+
+
 ## 💾Git/GitHub
 
 
